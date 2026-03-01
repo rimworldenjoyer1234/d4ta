@@ -26,6 +26,19 @@ def _log1p_clip(x: np.ndarray) -> np.ndarray:
     return np.log1p(np.clip(x.astype(float), a_min=0, a_max=None))
 
 
+def _safe_feature_names(preprocessor: ColumnTransformer, fallback_cols: Sequence[str]) -> list[str]:
+    """Get feature names from sklearn preprocessor with backward-compatible fallback.
+
+    Older sklearn versions may fail when a pipeline step (e.g., FunctionTransformer)
+    does not expose ``get_feature_names_out``. In that case we return deterministic
+    fallback names based on the transformed width.
+    """
+    try:
+        return list(preprocessor.get_feature_names_out())
+    except Exception:
+        return [f"f_{i:04d}_{col}" for i, col in enumerate(fallback_cols)]
+
+
 def fit_netflow_preprocessor(
     train_df: pd.DataFrame,
     feature_cols: Sequence[str],
@@ -49,7 +62,8 @@ def fit_netflow_preprocessor(
     model_path = out_dir / "preprocessor.joblib"
     names_path = out_dir / "feature_names.joblib"
     joblib.dump(ct, model_path)
-    joblib.dump(list(ct.get_feature_names_out()), names_path)
+    fallback_cols = list(log_cols) + list(passthrough_cols)
+    joblib.dump(_safe_feature_names(ct, fallback_cols), names_path)
     return PreprocessArtifacts(model_path, names_path)
 
 
@@ -72,7 +86,8 @@ def fit_kdd_preprocessor(
     model_path = out_dir / "preprocessor.joblib"
     names_path = out_dir / "feature_names.joblib"
     joblib.dump(ct, model_path)
-    joblib.dump(list(ct.get_feature_names_out()), names_path)
+    fallback_cols = list(categorical_cols) + list(numeric_cols)
+    joblib.dump(_safe_feature_names(ct, fallback_cols), names_path)
     return PreprocessArtifacts(model_path, names_path)
 
 
