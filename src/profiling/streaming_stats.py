@@ -19,18 +19,44 @@ class NumericTracker:
     m2: float = 0.0
     min_value: Optional[float] = None
     max_value: Optional[float] = None
+    non_finite_dropped: int = 0
 
     def update(self, values: pd.Series) -> None:
         """Update tracker from a numeric series."""
-        arr = pd.to_numeric(values, errors="coerce").dropna().to_numpy(dtype=float)
-        for x in arr:
-            self.count += 1
-            delta = x - self.mean
-            self.mean += delta / self.count
-            delta2 = x - self.mean
-            self.m2 += delta * delta2
-            self.min_value = x if self.min_value is None else min(self.min_value, x)
-            self.max_value = x if self.max_value is None else max(self.max_value, x)
+        arr = pd.to_numeric(values, errors="coerce").dropna().to_numpy(dtype=np.float64)
+        if arr.size == 0:
+            return
+
+        finite_mask = np.isfinite(arr)
+        if not np.all(finite_mask):
+            self.non_finite_dropped += int((~finite_mask).sum())
+            arr = arr[finite_mask]
+            if arr.size == 0:
+                return
+
+        chunk_count = int(arr.size)
+        chunk_mean = float(arr.mean())
+        chunk_min = float(arr.min())
+        chunk_max = float(arr.max())
+        centered = arr - chunk_mean
+        chunk_m2 = float(np.dot(centered, centered))
+
+        if self.count == 0:
+            self.count = chunk_count
+            self.mean = chunk_mean
+            self.m2 = chunk_m2
+            self.min_value = chunk_min
+            self.max_value = chunk_max
+            return
+
+        total_count = self.count + chunk_count
+        delta = chunk_mean - self.mean
+
+        self.m2 = self.m2 + chunk_m2 + (delta * delta) * (self.count * chunk_count / total_count)
+        self.mean = self.mean + delta * (chunk_count / total_count)
+        self.count = total_count
+        self.min_value = chunk_min if self.min_value is None else min(self.min_value, chunk_min)
+        self.max_value = chunk_max if self.max_value is None else max(self.max_value, chunk_max)
 
     def to_dict(self) -> Dict[str, Optional[float]]:
         """Serialize stats."""
@@ -41,6 +67,7 @@ class NumericTracker:
             "mean": float(self.mean) if self.count > 0 else None,
             "std": float(np.sqrt(variance)) if self.count > 0 else None,
             "count": int(self.count),
+            "non_finite_dropped": int(self.non_finite_dropped),
         }
 
 
