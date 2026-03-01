@@ -8,6 +8,7 @@ from typing import Any, Dict, Iterable
 
 from src.profiling.schema import infer_column_type, TypeThresholds
 from src.profiling.streaming_stats import ColumnTracker
+from src.utils.serialization import to_builtin
 
 
 def _top_categories(tracker: ColumnTracker, k: int) -> Dict[str, int]:
@@ -77,4 +78,4 @@ def build_profile(
 def write_profile_json(path: str, profile: Dict[str, Any]) -> None:
     """Write profile JSON."""
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(profile, f, indent=2, ensure_ascii=False)
+        json.dump(to_builtin(profile), f, indent=2, ensure_ascii=False)

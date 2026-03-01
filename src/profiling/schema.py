@@ -8,6 +8,7 @@ from typing import Any, Dict, Iterable, List
 import yaml
 
 from src.profiling.streaming_stats import ColumnTracker
+from src.utils.serialization import to_builtin
 
 
 @dataclass(frozen=True)
@@ -67,4 +68,4 @@ def build_schema(dataset_name: str, columns: Iterable[ColumnTracker]) -> Dict[st
 def write_schema_yaml(path: str, schema: Dict[str, Any]) -> None:
     """Write schema YAML file."""
     with open(path, "w", encoding="utf-8") as f:
-        yaml.safe_dump(schema, f, sort_keys=False, allow_unicode=True)
+        yaml.safe_dump(to_builtin(schema), f, sort_keys=False, allow_unicode=True)

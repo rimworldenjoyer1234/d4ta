@@ -36,11 +36,11 @@ class NumericTracker:
         """Serialize stats."""
         variance = (self.m2 / (self.count - 1)) if self.count > 1 else 0.0
         return {
-            "min": self.min_value,
-            "max": self.max_value,
-            "mean": self.mean if self.count > 0 else None,
+            "min": float(self.min_value) if self.min_value is not None else None,
+            "max": float(self.max_value) if self.max_value is not None else None,
+            "mean": float(self.mean) if self.count > 0 else None,
             "std": float(np.sqrt(variance)) if self.count > 0 else None,
-            "count": self.count,
+            "count": int(self.count),
         }
 
 
