@@ -37,9 +37,9 @@ def build_graph_from_spec(
 
     with timer() as t:
         if builder.__class__.__name__ == "ShareEntityGraphBuilder":
-            edge_index_np, _, extra = builder.build(node_df, EdgeBudget(dbar=dbar))
+            edge_index_np, _, extra = builder.build(node_df, EdgeBudget(d_bar=dbar))
         else:
-            edge_index_np, _, extra = builder.build(x_np, EdgeBudget(dbar=dbar))
+            edge_index_np, _, extra = builder.build(x_np, EdgeBudget(d_bar=dbar))
 
     y_np = node_df["binary_label"].astype(int).to_numpy()
     edge_index = torch.tensor(edge_index_np.T, dtype=torch.long) if edge_index_np.size else torch.empty((2, 0), dtype=torch.long)
