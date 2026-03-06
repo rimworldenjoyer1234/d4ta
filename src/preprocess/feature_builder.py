@@ -26,6 +26,16 @@ def _log1p_clip(x: np.ndarray) -> np.ndarray:
     return np.log1p(np.clip(x.astype(float), a_min=0, a_max=None))
 
 
+
+
+def _make_dense_ohe() -> OneHotEncoder:
+    """Build a dense OneHotEncoder across sklearn versions."""
+    try:
+        return OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+    except TypeError:
+        return OneHotEncoder(handle_unknown="ignore", sparse=False)
+
+
 def _safe_feature_names(preprocessor: ColumnTransformer, fallback_cols: Sequence[str]) -> list[str]:
     """Get feature names from sklearn preprocessor with backward-compatible fallback.
 
@@ -77,7 +87,7 @@ def fit_kdd_preprocessor(
     out_dir.mkdir(parents=True, exist_ok=True)
     ct = ColumnTransformer(
         transformers=[
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse=False), list(categorical_cols)),
+            ("cat", _make_dense_ohe(), list(categorical_cols)),
             ("num", StandardScaler(), list(numeric_cols)),
         ],
         remainder="drop",
